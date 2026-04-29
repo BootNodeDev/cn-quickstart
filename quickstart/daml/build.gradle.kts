@@ -25,6 +25,14 @@ tasks.register<Exec>("testDaml") {
     val requiredVersion = VersionFiles.damlYamlSdk
     commandLine("dpm", "test", "--package-root", "licensing-tests")
     environment("DPM_SDK_VERSION", requiredVersion)
+    dependsOn("compileDaml")
+}
+
+tasks.register<Exec>("testPocAliasDaml") {
+    val requiredVersion = VersionFiles.damlYamlSdk
+    commandLine("dpm", "test", "--package-root", "poc-alias-tests")
+    environment("DPM_SDK_VERSION", requiredVersion)
+    dependsOn("compileDaml")
 }
 
 tasks.register<com.digitalasset.transcode.codegen.java.gradle.JavaCodegenTask>("codeGen") {

@@ -1,0 +1,8 @@
+-- Copyright (c) 2026, Digital Asset (Switzerland) GmbH and/or its affiliates.
+-- SPDX-License-Identifier: 0BSD
+
+module PocAlias.Util where
+
+require : CanAssert m => Text -> Bool -> m ()
+require msg invariant =
+  assertMsg ("The requirement '" <> msg <> "' was not met.") invariant

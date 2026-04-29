@@ -1,0 +1,65 @@
+module PocAlias.Scripts.TestAlias where
+
+import Daml.Script
+
+import DA.Assert
+
+import PocAlias.Alias
+import Splice.Testing.Utils
+
+testAliasReservations : Script ()
+testAliasReservations = script do
+  -- `allocatePartyExact` makes concrete Party values for the script.
+  registry <- allocatePartyExact "alias-registry"
+  owner <- allocatePartyExact "alias-owner"
+  otherOwner <- allocatePartyExact "alias-other-owner"
+
+  -- The registry is the singleton contract that holds the uniqueness index.
+  registryCid <- submit registry $ createCmd (AliasRegistry with
+    registryParty = registry
+    reservations = [])
+
+  -- `exerciseCmd` consumes the registry contract and creates the owner record.
+  (ownerAliasCid, registryCid) <-
+    submitMulti [registry, owner] [] $
+      exerciseCmd registryCid Register with
+        owner = owner
+        alias = "Alice"
+
+  Some ownerAlias <- queryContractId owner ownerAliasCid
+  ownerAlias.aliasKey === "alice"
+
+  -- The same owner cannot register a second alias.
+  submitMultiMustFail [registry, owner] [] $
+    exerciseCmd registryCid Register with
+      owner = owner
+      alias = "Alice-2"
+
+  -- A second owner cannot claim the same normalized alias while it is active.
+  submitMultiMustFail [registry, otherOwner] [] $
+    exerciseCmd registryCid Register with
+      owner = otherOwner
+      alias = "ALICE"
+
+  -- `exerciseCmd` on the owner reservation updates the owner record and the
+  -- registry in one transaction.
+  (updatedOwnerAliasCid, registryCid) <-
+    submitMulti [registry, owner] [] $
+      exerciseCmd ownerAliasCid AliasUpdate with
+        registryCid = registryCid
+        newAlias = "ALICE-NEW"
+
+  None <- queryContractId owner ownerAliasCid
+
+  Some updatedOwnerAlias <- queryContractId owner updatedOwnerAliasCid
+  updatedOwnerAlias.aliasKey === "alice-new"
+
+  -- Once the owner updates to a new alias, another owner can take the old one.
+  (reclaimedOwnerAliasCid, _registryCid2) <-
+    submitMulti [registry, otherOwner] [] $
+      exerciseCmd registryCid Register with
+        owner = otherOwner
+        alias = "alice"
+
+  Some reclaimedOwnerAlias <- queryContractId otherOwner reclaimedOwnerAliasCid
+  reclaimedOwnerAlias.aliasKey === "alice"

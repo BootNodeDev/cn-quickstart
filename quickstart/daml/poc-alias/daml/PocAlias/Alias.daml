@@ -1,0 +1,106 @@
+-- Copyright (c) 2026, Digital Asset (Switzerland) GmbH and/or its affiliates.
+-- SPDX-License-Identifier: 0BSD
+
+module PocAlias.Alias where
+
+import DA.Text (asciiToLower, isEmpty)
+
+import PocAlias.Util (require)
+
+-- A tiny helper that turns the user-facing alias into the ledger key.
+normalizeAlias : Text -> Text
+normalizeAlias alias = asciiToLower alias
+
+-- One row in the registry index.
+-- This is not a contract; it is the in-memory ledger state stored inside
+-- `AliasRegistry`.
+-- It answers: "which owner currently has which normalized alias?"
+data ReservationIndex = ReservationIndex with
+    owner : Party
+    aliasKey : Text
+  deriving (Eq, Show)
+
+hasOwner : [ReservationIndex] -> Party -> Bool
+hasOwner [] _ = False
+hasOwner (row :: rest) target =
+  if row.owner == target then True else hasOwner rest target
+
+hasAliasKey : [ReservationIndex] -> Text -> Bool
+hasAliasKey [] _ = False
+hasAliasKey (row :: rest) target =
+  if row.aliasKey == target then True else hasAliasKey rest target
+
+removeOwner : [ReservationIndex] -> Party -> [ReservationIndex]
+removeOwner [] _ = []
+removeOwner (row :: rest) target =
+  if row.owner == target then removeOwner rest target else row :: removeOwner rest target
+
+-- `AliasRegistry` is the shared index contract.
+-- It stores the current map of taken aliases so new registrations can be
+-- rejected before any owner reservation contracts are created.
+-- We recreate it on each change so the current snapshot is consumed and
+-- replaced atomically. That makes the registry act like a ledger-level lock:
+-- concurrent updates must race on the same contract, and only one can win.
+template AliasRegistry with
+    registryParty : Party
+    reservations : [ReservationIndex]
+  where
+    -- `signatory` lists the parties that authorize creation of this contract.
+    signatory registryParty
+
+    -- `choice` defines an action that can be exercised on this contract.
+    choice Register : (ContractId OwnerAlias, ContractId AliasRegistry)
+      with
+        owner : Party
+        alias : Text
+      controller registryParty, owner
+      do
+        require "alias must not be empty" (not $ isEmpty alias)
+
+        let aliasKey = normalizeAlias alias
+        require "owner already has an alias" (not $ hasOwner reservations owner)
+        require "alias already taken" (not $ hasAliasKey reservations aliasKey)
+
+        -- `create` here returns the per-owner reservation.
+        ownerCid <- create OwnerAlias with
+          registryParty = registryParty
+          accountOwner = owner
+          aliasKey = aliasKey
+
+        newRegistryCid <- create this with
+          reservations = (ReservationIndex with owner = owner, aliasKey = aliasKey) :: reservations
+
+        pure (ownerCid, newRegistryCid)
+
+-- `OwnerAlias` is the owner-scoped record.
+-- It tells us which alias is currently effective for that owner.
+template OwnerAlias with
+    registryParty : Party
+    accountOwner : Party
+    aliasKey : Text
+  where
+    -- Both parties authorize changes to the effective alias record.
+    signatory registryParty, accountOwner
+
+    choice AliasUpdate : (ContractId OwnerAlias, ContractId AliasRegistry)
+      with
+        registryCid : ContractId AliasRegistry
+        newAlias : Text
+      controller registryParty, accountOwner
+      do
+        require "alias must not be empty" (not $ isEmpty newAlias)
+
+        registryContract <- fetch registryCid
+        let newAliasKey = normalizeAlias newAlias
+            reservationsWithoutOwner = removeOwner registryContract.reservations accountOwner
+        require "alias already taken" (not $ hasAliasKey reservationsWithoutOwner newAliasKey)
+
+        -- `this` is the current contract value. We clone it and override the
+        -- fields that change.
+        newOwnerCid <- create this with
+          aliasKey = newAliasKey
+
+        newRegistryCid <- create registryContract with
+          reservations = (ReservationIndex with owner = accountOwner, aliasKey = newAliasKey) :: reservationsWithoutOwner
+
+        pure (newOwnerCid, newRegistryCid)
