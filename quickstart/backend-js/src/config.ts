@@ -16,6 +16,8 @@ export interface BackendConfig {
     backendClientSecret: string
     backendOidcClientId: string
     issuerUrl: string
+    participantAdminClientId: string
+    participantAdminClientSecret: string
     appUserBackendOidcClientId: string
     appUserIssuerUrl: string
   }
@@ -67,6 +69,8 @@ export const loadConfig = (): BackendConfig => {
       backendClientSecret: required('AUTH_APP_PROVIDER_BACKEND_SECRET'),
       backendOidcClientId: required('AUTH_APP_PROVIDER_BACKEND_OIDC_CLIENT_ID'),
       issuerUrl: required('AUTH_APP_PROVIDER_ISSUER_URL'),
+      participantAdminClientId: required('AUTH_APP_PROVIDER_VALIDATOR_CLIENT_ID'),
+      participantAdminClientSecret: required('AUTH_APP_PROVIDER_VALIDATOR_CLIENT_SECRET'),
       appUserBackendOidcClientId: optional('AUTH_APP_USER_BACKEND_OIDC_CLIENT_ID') ?? '',
       appUserIssuerUrl: optional('AUTH_APP_USER_ISSUER_URL') ?? ''
     } : undefined

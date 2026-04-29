@@ -18,6 +18,7 @@ export const registerCsrf = async (app: FastifyInstance): Promise<void> => {
       ensureToken(req, reply)
       return
     }
+    if (req.method === 'POST' && req.url === '/signup') return
     // Bearer-authenticated calls are stateless service-to-service traffic (e.g.
     // register-app-user-tenant); CSRF is a session-cookie defense and doesn't apply.
     // Mirrors Spring Security's default of bypassing CSRF for JWT bearer auth.

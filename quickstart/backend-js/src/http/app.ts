@@ -14,11 +14,13 @@ import type { LicensingService } from '../domain/licensing/service.js'
 import { registerAdmin } from '../routes/admin.js'
 import { registerLoginLinks } from '../routes/login-links.js'
 import { registerUser } from '../routes/user.js'
+import { registerSignup } from '../routes/signup.js'
 import { registerFeatureFlags } from '../routes/feature-flags.js'
 import { registerAppInstallRequests } from '../routes/app-install-requests.js'
 import { registerAppInstalls } from '../routes/app-installs.js'
 import { registerLicenses } from '../routes/licenses.js'
 import { registerLicenseRenewalRequests } from '../routes/license-renewal-requests.js'
+import type { SignupService } from '../signup/service.js'
 
 export interface Services {
   cfg: BackendConfig
@@ -28,6 +30,7 @@ export interface Services {
   tenants: TenantRepository
   oauth2Registry: OAuth2Registry
   licensing: LicensingService
+  signup?: SignupService
 }
 
 export const buildApp = async (services: Services): Promise<FastifyInstance> => {
@@ -56,6 +59,7 @@ export const buildApp = async (services: Services): Promise<FastifyInstance> => 
   await registerAdmin(app, cfg, tenants, oauth2Registry)
   await registerLoginLinks(app, cfg, oauth2Registry)
   await registerUser(app, tenants)
+  if (services.signup !== undefined) await registerSignup(app, services.signup)
   await registerFeatureFlags(app, cfg)
   await registerAppInstallRequests(app, services)
   await registerAppInstalls(app, services)

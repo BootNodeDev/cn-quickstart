@@ -45,6 +45,36 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
+  /signup:
+    post:
+      tags: [Auth]
+      summary: Sign up or log in with a demo username
+      operationId: signup
+      requestBody:
+        description: Demo username used as the login key
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '200':
+          description: Existing demo user logged in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedUser'
+        '201':
+          description: New demo user created and logged in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedUser'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
   /user:
     get:
       tags: [Auth]
@@ -572,6 +602,14 @@ components:
         name:
           type: string
         url:
+          type: string
+
+    SignupRequest:
+      type: object
+      required:
+        - username
+      properties:
+        username:
           type: string
 
     AppInstallRequest:
