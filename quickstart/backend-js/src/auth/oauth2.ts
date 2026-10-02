@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto'
 import type { BackendConfig } from '../config.js'
 import type { TenantRepository } from '../tenants/repository.js'
 import { OAuth2Registry } from './oauth2-registry.js'
-import { XSRF_COOKIE } from './cookies.js'
+import { ensureCsrfToken } from './csrf.js'
 import { resolveTestModePartyId } from './test-mode-party.js'
 
 const baseUrl = (req: { headers: Record<string, string | string[] | undefined> }, cfg: BackendConfig): string => {
@@ -78,13 +78,9 @@ export const registerOAuth2 = async (app: FastifyInstance, cfg: BackendConfig, r
         isAdmin: isAppProvider
       }
       req.session.oauthState = undefined
-      // Mirrors Spring Security's CSRF workaround for oauth2 callback: ensure an XSRF-TOKEN
-      // cookie exists, but do not overwrite a token the client already holds (preserves
-      // tokens from in-flight tabs that were issued before login).
-      if (req.cookies[XSRF_COOKIE] === undefined || req.cookies[XSRF_COOKIE] === '') {
-        const csrfToken = randomBytes(32).toString('hex')
-        reply.setCookie(XSRF_COOKIE, csrfToken, { httpOnly: false, sameSite: 'lax', path: '/', secure: false })
-      }
+      // Make sure an XSRF-TOKEN cookie exists after login, without replacing one the client
+      // already holds (tabs opened before login keep their token).
+      ensureCsrfToken(req, reply)
       return reply.redirect('/')
     }
   )

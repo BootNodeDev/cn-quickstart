@@ -5,7 +5,7 @@ import { hasBearerToken } from './jwt-admin.js'
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
-const ensureToken = (req: FastifyRequest, reply: FastifyReply): string => {
+export const ensureCsrfToken = (req: FastifyRequest, reply: FastifyReply): string => {
   const existing = req.cookies[XSRF_COOKIE]
 
   if (existing !== undefined && existing !== '') {
@@ -21,7 +21,7 @@ const ensureToken = (req: FastifyRequest, reply: FastifyReply): string => {
 export const registerCsrf = async (app: FastifyInstance): Promise<void> => {
   app.addHook('onRequest', async (req, reply) => {
     if (SAFE_METHODS.has(req.method)) {
-      ensureToken(req, reply)
+      ensureCsrfToken(req, reply)
       return
     }
 
