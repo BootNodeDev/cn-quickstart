@@ -1,27 +1,40 @@
 import type { BackendConfig } from '../config.js'
+import { isRecord } from '../utils/guards.js'
 import { jsonOrThrow } from '../utils/http.js'
+
+type RegistryInfo = { adminId: string }
+
+const REGISTRY_INFO_PATH = '/registry/metadata/v1/info'
+
+const isRegistryInfo = (body: unknown): body is RegistryInfo => isRecord(body) && typeof body.adminId === 'string'
 
 export class TokenStandardClient {
   constructor(private readonly cfg: BackendConfig) {}
 
-  private async get<T>(path: string): Promise<T> {
+  private async get(path: string): Promise<unknown> {
     const res = await fetch(`${this.cfg.registryBaseUri}${path}`)
 
-    return await jsonOrThrow(res, path) as T
+    return jsonOrThrow(res, path)
   }
 
-  private async post<T>(path: string, body: unknown): Promise<T> {
+  private async post(path: string, body: unknown): Promise<unknown> {
     const res = await fetch(`${this.cfg.registryBaseUri}${path}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body)
     })
 
-    return await jsonOrThrow(res, path) as T
+    return jsonOrThrow(res, path)
   }
 
-  async getRegistryAdminId(): Promise<{ adminId: string }> {
-    return this.get<{ adminId: string }>('/registry/metadata/v1/info')
+  async getRegistryAdminId(): Promise<RegistryInfo> {
+    const body = await this.get(REGISTRY_INFO_PATH)
+
+    if (!isRegistryInfo(body)) {
+      throw new Error(`${REGISTRY_INFO_PATH} returned no adminId`)
+    }
+
+    return body
   }
 
   async getAllocationTransferContext(allocationCid: string): Promise<unknown> {

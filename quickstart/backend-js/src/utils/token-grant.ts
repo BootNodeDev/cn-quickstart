@@ -1,8 +1,14 @@
+import { isNonEmptyString, isRecord } from './guards.js'
 import { jsonOrThrow } from './http.js'
 
 export type TokenClient = { tokenEndpoint: string; clientId: string; clientSecret?: string }
 
 export type TokenResponse = { access_token: string; expires_in?: number }
+
+const isTokenResponse = (body: unknown): body is TokenResponse =>
+  isRecord(body) &&
+  isNonEmptyString(body.access_token) &&
+  (body.expires_in === undefined || typeof body.expires_in === 'number')
 
 export const requestToken = async (
   client: TokenClient,
@@ -22,5 +28,9 @@ export const requestToken = async (
 
   const body = await jsonOrThrow(response, 'token endpoint')
 
-  return body as TokenResponse
+  if (!isTokenResponse(body)) {
+    throw new Error('token endpoint returned an unexpected response')
+  }
+
+  return body
 }
