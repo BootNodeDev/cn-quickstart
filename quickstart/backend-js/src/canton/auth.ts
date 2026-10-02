@@ -1,4 +1,5 @@
 import type { BackendConfig } from '../config.js'
+import { keycloakEndpoint } from '../utils/keycloak.js'
 import { requestToken } from '../utils/token-grant.js'
 
 interface CachedToken { token: string; expiresAt: number }
@@ -16,7 +17,7 @@ export class CantonTokenProvider {
 
     const response = await requestToken(
       {
-        tokenEndpoint: `${this.cfg.oauth2.issuerUrl.replace(/\/$/, '')}/protocol/openid-connect/token`,
+        tokenEndpoint: keycloakEndpoint(this.cfg.oauth2.issuerUrl, 'token'),
         clientId: this.cfg.oauth2.backendClientId,
         clientSecret: this.cfg.oauth2.backendClientSecret
       },

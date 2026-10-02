@@ -1,6 +1,7 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose'
 import type { BackendConfig } from '../config.js'
 import { isUndefinedOrEmpty } from '../utils/guards.js'
+import { keycloakEndpoint } from '../utils/keycloak.js'
 
 export type AdminBearerResult = 'absent' | 'valid' | 'invalid'
 
@@ -15,7 +16,7 @@ const getJwks = (issuer: string): ReturnType<typeof createRemoteJWKSet> => {
     return existing
   }
 
-  const jwksUri = `${issuer.replace(/\/$/, '')}/protocol/openid-connect/certs`
+  const jwksUri = keycloakEndpoint(issuer, 'certs')
   const jwks = createRemoteJWKSet(new URL(jwksUri))
 
   jwksCache.set(issuer, jwks)
