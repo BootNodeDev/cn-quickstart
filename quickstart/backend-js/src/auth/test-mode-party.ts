@@ -1,4 +1,5 @@
 import type { BackendConfig } from '../config.js'
+import { isNonEmptyString } from '../utils/guards.js'
 
 // Mirrors Spring's `test` profile (OAuth2AuthenticationSuccessHandler): in TEST_MODE the
 // JWT's `party_id` claim wins over the tenant-registered party so each integration-test
@@ -11,5 +12,5 @@ export const resolveTestModePartyId = (
 ): string => {
   if (!cfg.testMode || claims === undefined) return fallback
   const claim = claims['party_id']
-  return typeof claim === 'string' && claim !== '' ? claim : fallback
+  return isNonEmptyString(claim) ? claim : fallback
 }

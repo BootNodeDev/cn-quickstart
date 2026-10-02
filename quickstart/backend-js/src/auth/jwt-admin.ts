@@ -1,5 +1,6 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose'
 import type { BackendConfig } from '../config.js'
+import { isUndefinedOrEmpty } from '../utils/guards.js'
 
 export type AdminBearerResult = 'absent' | 'valid' | 'invalid'
 
@@ -33,7 +34,7 @@ export const checkAdminBearer = async (cfg: BackendConfig, authHeader: string | 
   const token = authHeader.match(BEARER_TOKEN)?.[1]
   const issuer = cfg.oauth2?.issuerUrl
 
-  if (token === undefined || issuer === undefined || issuer === '') {
+  if (token === undefined || isUndefinedOrEmpty(issuer)) {
     return 'invalid'
   }
 

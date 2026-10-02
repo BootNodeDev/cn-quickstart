@@ -2,13 +2,14 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { randomBytes } from 'node:crypto'
 import { XSRF_COOKIE, XSRF_HEADER } from './cookies.js'
 import { hasBearerToken } from './jwt-admin.js'
+import { isNonEmptyString } from '../utils/guards.js'
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
 export const ensureCsrfToken = (req: FastifyRequest, reply: FastifyReply): string => {
   const existing = req.cookies[XSRF_COOKIE]
 
-  if (existing !== undefined && existing !== '') {
+  if (isNonEmptyString(existing)) {
     return existing
   }
 

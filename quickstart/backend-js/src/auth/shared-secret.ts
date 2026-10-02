@@ -2,13 +2,14 @@ import type { FastifyInstance } from 'fastify'
 import type { BackendConfig } from '../config.js'
 import type { TenantRepository } from '../tenants/repository.js'
 import { resolveTestModePartyId } from './test-mode-party.js'
+import { isUndefinedOrEmpty } from '../utils/guards.js'
 
 export const registerSharedSecret = async (app: FastifyInstance, cfg: BackendConfig, tenants: TenantRepository): Promise<void> => {
   if (cfg.authMode !== 'shared-secret') return
 
   app.post<{ Body: { username?: string } }>('/login', async (req, reply) => {
     const username = req.body?.username
-    if (username === undefined || username === '') { reply.redirect('/login?error=missing_username'); return }
+    if (isUndefinedOrEmpty(username)) { reply.redirect('/login?error=missing_username'); return }
     const matchedTenant = tenants.list().find(t => t.users?.includes(username))
     if (matchedTenant === undefined) { reply.redirect('/login?error=unknown_user'); return }
     req.session.user = {

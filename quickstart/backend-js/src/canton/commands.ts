@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import type * as damlTypes from '@daml/types'
 import type { BackendConfig } from '../config.js'
 import type { LedgerApi, DisclosedContract } from './ledger.js'
+import { isUndefinedOrEmpty } from '../utils/guards.js'
 
 export interface SubmitContext {
   actAs: string
@@ -10,7 +11,7 @@ export interface SubmitContext {
 }
 
 export const generateCommandId = (override?: string): string =>
-  override !== undefined && override !== '' ? override : `qs-js-${randomBytes(8).toString('hex')}`
+  isUndefinedOrEmpty(override) ? `qs-js-${randomBytes(8).toString('hex')}` : override
 
 export const createContract = async <T extends object, K, I extends string>(
   ledger: LedgerApi,
