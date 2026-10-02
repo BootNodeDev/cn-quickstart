@@ -2,6 +2,8 @@ import { optional, required } from './utils/env.js'
 
 export interface BackendConfig {
   port: number
+  // Signs session cookies. When unset, each start generates a random one; an empty value fails at startup.
+  sessionSecret?: string
   registryBaseUri: string
   ledgerHost: string
   ledgerPort: number
@@ -33,6 +35,7 @@ export const loadConfig = (env: NodeJS.ProcessEnv): BackendConfig => {
 
   return {
     port: Number(required(env, 'BACKEND_PORT')),
+    sessionSecret: env['SESSION_SECRET'],
     registryBaseUri: required(env, 'REGISTRY_BASE_URI'),
     ledgerHost,
     ledgerPort,

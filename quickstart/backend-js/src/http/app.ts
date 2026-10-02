@@ -47,7 +47,7 @@ export const buildApp = async (services: Services): Promise<FastifyInstance> => 
     }
   })
   await app.register(formbody)
-  await registerSession(app)
+  await registerSession(app, cfg)
   if (cfg.authMode === 'oauth2') await registerCsrf(app)
   await registerOAuth2(app, cfg, oauth2Registry, tenants)
   await registerSharedSecret(app, cfg, tenants)
