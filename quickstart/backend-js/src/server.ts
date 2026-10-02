@@ -9,7 +9,7 @@ import { initOAuth2Registry } from './auth/oauth2.js'
 import { LicensingService } from './domain/licensing/service.js'
 
 const main = async (): Promise<void> => {
-  const cfg = loadConfig()
+  const cfg = loadConfig(process.env)
   const pool = buildPool(cfg)
   const tokens = new CantonTokenProvider(cfg)
   const ledger = new LedgerApi(cfg, tokens)
