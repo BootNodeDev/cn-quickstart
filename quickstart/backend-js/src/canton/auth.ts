@@ -1,4 +1,5 @@
 import type { BackendConfig } from '../config.js'
+import { requestToken } from '../utils/token-grant.js'
 
 interface CachedToken { token: string; expiresAt: number }
 
@@ -13,16 +14,20 @@ export class CantonTokenProvider {
     const now = Date.now()
     if (this.cached !== undefined && this.cached.expiresAt > now + 30_000) return this.cached.token
 
-    const tokenUrl = `${this.cfg.oauth2.issuerUrl.replace(/\/$/, '')}/protocol/openid-connect/token`
-    const body = new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: this.cfg.oauth2.backendClientId,
-      client_secret: this.cfg.oauth2.backendClientSecret
-    })
-    const res = await fetch(tokenUrl, { method: 'POST', body, headers: { 'content-type': 'application/x-www-form-urlencoded' } })
-    if (!res.ok) throw new Error(`token endpoint ${res.status}: ${await res.text()}`)
-    const json = await res.json() as { access_token: string; expires_in: number }
-    this.cached = { token: json.access_token, expiresAt: now + json.expires_in * 1000 }
-    return json.access_token
+    const response = await requestToken(
+      {
+        tokenEndpoint: `${this.cfg.oauth2.issuerUrl.replace(/\/$/, '')}/protocol/openid-connect/token`,
+        clientId: this.cfg.oauth2.backendClientId,
+        clientSecret: this.cfg.oauth2.backendClientSecret
+      },
+      'client_credentials',
+      {}
+    )
+
+    if (response.expires_in !== undefined) {
+      this.cached = { token: response.access_token, expiresAt: now + response.expires_in * 1000 }
+    }
+
+    return response.access_token
   }
 }
