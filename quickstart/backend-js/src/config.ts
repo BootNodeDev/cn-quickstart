@@ -1,4 +1,4 @@
-import { optional, required } from './utils/env.js'
+import { optional, required, requiredPort } from './utils/env.js'
 
 export interface BackendConfig {
   port: number
@@ -27,14 +27,14 @@ export interface BackendConfig {
 
 export const loadConfig = (env: NodeJS.ProcessEnv): BackendConfig => {
   const ledgerHost = required(env, 'LEDGER_HOST')
-  const ledgerPort = Number(required(env, 'LEDGER_PORT'))
+  const ledgerPort = requiredPort(env, 'LEDGER_PORT')
   const activeProfile = required(env, 'SPRING_PROFILES_ACTIVE').toLowerCase()
   const authMode: 'oauth2' | 'shared-secret' = activeProfile.includes('oauth2')
     ? 'oauth2'
     : 'shared-secret'
 
   return {
-    port: Number(required(env, 'BACKEND_PORT')),
+    port: requiredPort(env, 'BACKEND_PORT'),
     sessionSecret: env['SESSION_SECRET'],
     registryBaseUri: required(env, 'REGISTRY_BASE_URI'),
     ledgerHost,
@@ -42,7 +42,7 @@ export const loadConfig = (env: NodeJS.ProcessEnv): BackendConfig => {
     ledgerJsonApiBaseUrl: `http://${ledgerHost}:${ledgerPort}`,
     postgres: {
       host: required(env, 'POSTGRES_HOST'),
-      port: Number(required(env, 'POSTGRES_PORT')),
+      port: requiredPort(env, 'POSTGRES_PORT'),
       database: required(env, 'POSTGRES_DATABASE'),
       user: required(env, 'POSTGRES_USERNAME'),
       password: required(env, 'POSTGRES_PASSWORD')
