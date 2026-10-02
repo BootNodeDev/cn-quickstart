@@ -1,12 +1,13 @@
 import type { BackendConfig } from '../config.js'
+import { jsonOrThrow } from '../utils/http.js'
 
 export class TokenStandardClient {
   constructor(private readonly cfg: BackendConfig) {}
 
   private async get<T>(path: string): Promise<T> {
     const res = await fetch(`${this.cfg.registryBaseUri}${path}`)
-    if (!res.ok) throw new Error(`${path} ${res.status}: ${await res.text()}`)
-    return await res.json() as T
+
+    return await jsonOrThrow(res, path) as T
   }
 
   private async post<T>(path: string, body: unknown): Promise<T> {
@@ -15,8 +16,8 @@ export class TokenStandardClient {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body)
     })
-    if (!res.ok) throw new Error(`${path} ${res.status}: ${await res.text()}`)
-    return await res.json() as T
+
+    return await jsonOrThrow(res, path) as T
   }
 
   async getRegistryAdminId(): Promise<{ adminId: string }> {

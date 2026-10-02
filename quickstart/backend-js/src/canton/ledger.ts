@@ -1,5 +1,6 @@
 import type { BackendConfig } from '../config.js'
 import type { CantonTokenProvider } from './auth.js'
+import { jsonOrThrow } from '../utils/http.js'
 
 export interface DisclosedContract {
   contractId: string
@@ -25,13 +26,13 @@ export interface SubmitArgs {
 export class LedgerApi {
   constructor(private readonly cfg: BackendConfig, private readonly tokens: CantonTokenProvider) {}
 
-  private async post<T>(path: string, body: unknown): Promise<T> {
+  private async post(path: string, body: unknown): Promise<unknown> {
     const token = await this.tokens.getToken()
     const headers: Record<string, string> = { 'content-type': 'application/json' }
     if (token !== undefined) headers['authorization'] = `Bearer ${token}`
     const res = await fetch(`${this.cfg.ledgerJsonApiBaseUrl}${path}`, { method: 'POST', headers, body: JSON.stringify(body) })
-    if (!res.ok) throw new Error(`${path} ${res.status}: ${await res.text()}`)
-    return await res.json() as T
+
+    return jsonOrThrow(res, path)
   }
 
   async submitAndWaitForTransaction(args: SubmitArgs): Promise<unknown> {
