@@ -6,6 +6,7 @@ import type { TenantRepository } from '../tenants/repository.js'
 import { OAuth2Registry } from './oauth2-registry.js'
 import { ensureCsrfToken } from './csrf.js'
 import { resolveTestModePartyId } from './test-mode-party.js'
+import { isRecord } from '../utils/guards.js'
 
 const baseUrl = (req: { headers: Record<string, string | string[] | undefined> }, cfg: BackendConfig): string => {
   const proto = (req.headers['x-forwarded-proto'] as string | undefined) ?? 'http'
@@ -59,7 +60,7 @@ export const registerOAuth2 = async (app: FastifyInstance, cfg: BackendConfig, r
         expectedNonce: stored.nonce
       })
       const rawClaims = tokens.claims()
-      const claims: Record<string, unknown> = rawClaims !== undefined ? (rawClaims as Record<string, unknown>) : {}
+      const claims: Record<string, unknown> = isRecord(rawClaims) ? rawClaims : {}
       const name = (claims['name'] as string | undefined) ??
         (claims['preferred_username'] as string | undefined) ??
         (claims['sub'] as string | undefined) ?? 'unknown'
